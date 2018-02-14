@@ -12,7 +12,6 @@
   
   <modules>
   	<module>service-annotations</module>
-    <module>service-module</module>
     <module>service-binding</module>
   </modules>
 

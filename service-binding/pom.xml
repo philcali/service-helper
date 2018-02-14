@@ -13,11 +13,4 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
   </properties>
-  <dependencies>
-    <dependency>
-      <groupId>${project.parent.groupId}</groupId>
-      <artifactId>service-annotations</artifactId>
-      <version>${project.parent.version}</version>
-    </dependency>
-  </dependencies>
 </project>

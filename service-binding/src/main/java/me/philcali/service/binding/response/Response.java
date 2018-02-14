@@ -83,6 +83,10 @@ public class Response implements IResponse {
         return builder().withStatusCode(204).build();
     }
 
+    public static Response notFound() {
+        return builder().withStatusCode(404).build();
+    }
+
     public static Response ok() {
         return builder().build();
     }
