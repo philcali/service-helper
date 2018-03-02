@@ -13,6 +13,7 @@
   <modules>
   	<module>service-annotations</module>
     <module>service-binding</module>
+    <module>service-reflection</module>
   </modules>
 
   <properties>

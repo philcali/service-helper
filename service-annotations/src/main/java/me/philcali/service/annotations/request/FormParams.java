@@ -6,7 +6,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 @Retention(RetentionPolicy.RUNTIME)
-@Target({ ElementType.FIELD, ElementType.PARAMETER })
-public @interface QueryParam {
-    String value() default "";
+@Target({ ElementType.TYPE, ElementType.PARAMETER })
+public @interface FormParams {
+
 }

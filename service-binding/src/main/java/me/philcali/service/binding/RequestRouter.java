@@ -26,17 +26,21 @@ public class RequestRouter implements IOperation<IRequest, IResponse> {
         }
 
         public Builder withResources(final List<ResourceMethod> resources) {
-            this.resources = resources;
+            this.resources.addAll(resources);
             return this;
         }
 
         public Builder withResources(ResourceMethod... resources) {
-            Arrays.stream(resources).forEach(this.resources::add);
-            return this;
+            return withResources(Arrays.asList(resources));
         }
     }
 
+    public static RequestRouter.Builder builder() {
+        return new Builder();
+    }
+
     private final List<ResourceMethod> resources;
+
     private final Supplier<IResponse> notFound;
 
     private RequestRouter(final Builder builder) {

@@ -31,6 +31,10 @@ public class ResourceMethod implements Predicate<IRequest>, IOperation<IRequest,
         }
     }
 
+    public static Builder builder() {
+        return new Builder();
+    }
+
 
     private final String method;
     private final String patternPath;
