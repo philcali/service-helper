@@ -42,8 +42,9 @@ public class DefaultResourceMethodCollector implements IResourceMethodCollector 
         this.collectors = builder.collectors;
     }
 
-    public DefaultResourceMethodCollector(IObjectMarshaller marshaller) {
-        this(new DefaultResourceMethodLocator(), new DefaultReflectiveOperationFactory(marshaller));
+    public DefaultResourceMethodCollector(final IObjectMarshaller marshaller) {
+        this(DefaultResourceMethodLocator.standard().build(),
+                DefaultReflectiveOperationFactory.standard(marshaller).build());
     }
 
     public DefaultResourceMethodCollector(

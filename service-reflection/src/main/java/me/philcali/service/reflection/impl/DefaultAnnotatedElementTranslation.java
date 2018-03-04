@@ -18,7 +18,6 @@ import me.philcali.service.reflection.decoder.IParamDecoder;
 import me.philcali.service.reflection.function.AbstractTargetedTranslation;
 import me.philcali.service.reflection.function.IAnnotatedElementTranslationLocator;
 import me.philcali.service.reflection.function.IPrimitiveTranslation;
-import me.philcali.service.reflection.function.ITranslation;
 import me.philcali.service.reflection.function.ITranslationLocator;
 import me.philcali.service.reflection.parameter.BodyTranslationLocator;
 import me.philcali.service.reflection.parameter.InputParameterTranslationLocator;
@@ -46,31 +45,28 @@ public class DefaultAnnotatedElementTranslation<T extends AnnotatedElement> exte
     }
 
     private static final IParamDecoder DEFAULT_FORM_DECODER = new FormParamDecoder();
-    private static final IPrimitiveTranslation DEFAULT_PRIMITIVES = DefaultPrimitiveTranslation.builder().build();
+    private static final IPrimitiveTranslation DEFAULT_PRIMITIVES = DefaultPrimitiveTranslation.standard().build();
 
     public static <T extends AnnotatedElement> Builder<T> builder() {
         return new Builder<>();
     }
 
-    public static ITranslation<Field, IRequest> fields(final IObjectMarshaller marshaller) {
-        return new DefaultAnnotatedElementTranslation<>(Field::getType, Field::getName, marshaller);
+    public static Builder<Field> fields(final IObjectMarshaller marshaller) {
+        return standard(Field::getType, Field::getName, marshaller);
     }
 
-    public static ITranslation<Parameter, IRequest> parameters(final IObjectMarshaller marshaller) {
-        return new DefaultAnnotatedElementTranslation<>(Parameter::getType, Parameter::getName, marshaller);
+    public static Builder<Parameter> parameters(final IObjectMarshaller marshaller) {
+        return standard(Parameter::getType, Parameter::getName, marshaller)
+                .withLocators(new InputParameterTranslationLocator<>(marshaller, Parameter::getType, fields(marshaller).build()));
     }
 
-    private DefaultAnnotatedElementTranslation(final Builder<T> builder) {
-        super(builder.locators);
-    }
-
-    public DefaultAnnotatedElementTranslation(
+    public static <T extends AnnotatedElement> Builder<T> standard(
             final Function<T, Class<?>> lazyType,
             final Function<T, String> lazyName,
             final IObjectMarshaller marshaller) {
-        this(DefaultAnnotatedElementTranslation.<T>builder()
-                .withLocators(new VoidParameterTranslationLocator<>(lazyType))
-                .withLocators(new RequestTranslationLocator<>(lazyType))
+        return DefaultAnnotatedElementTranslation.<T>builder()
+                .withLocators(new VoidParameterTranslationLocator<T>(lazyType))
+                .withLocators(new RequestTranslationLocator<T>(lazyType))
                 .withLocators(new ParamTranslationLocator<T, QueryParam>(
                         QueryParam.class,
                         QueryParam::value,
@@ -99,8 +95,11 @@ public class DefaultAnnotatedElementTranslation<T extends AnnotatedElement> exte
                         lazyType,
                         DEFAULT_PRIMITIVES,
                         request -> DEFAULT_FORM_DECODER.decode(request.getBody())))
-                .withLocators(new BodyTranslationLocator<>(lazyType, marshaller))
-                .withLocators(new InputParameterTranslationLocator<>(marshaller, lazyType, fields(marshaller))));
+                .withLocators(new BodyTranslationLocator<T>(lazyType, marshaller));
+    }
+
+    private DefaultAnnotatedElementTranslation(final Builder<T> builder) {
+        super(builder.locators);
     }
 
 }

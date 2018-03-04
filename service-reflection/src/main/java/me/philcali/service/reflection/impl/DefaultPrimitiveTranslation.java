@@ -10,6 +10,7 @@ import me.philcali.service.reflection.function.IPrimitiveTranslationLocator;
 import me.philcali.service.reflection.function.ITranslationLocator;
 import me.philcali.service.reflection.parameter.primitives.DoublePrimitiveTranslation;
 import me.philcali.service.reflection.parameter.primitives.IntegerPrimitiveTranslation;
+import me.philcali.service.reflection.parameter.primitives.StringTranslation;
 
 public class DefaultPrimitiveTranslation extends AbstractTargetedTranslation<Class<?>, String, IPrimitiveTranslationLocator> implements IPrimitiveTranslation {
     public static class Builder {
@@ -34,10 +35,11 @@ public class DefaultPrimitiveTranslation extends AbstractTargetedTranslation<Cla
         return new Builder();
     }
 
-    public DefaultPrimitiveTranslation() {
-        this(builder()
+    public static Builder standard() {
+        return builder()
+                .withTranslations(new StringTranslation())
                 .withTranslations(new IntegerPrimitiveTranslation())
-                .withTranslations(new DoublePrimitiveTranslation()));
+                .withTranslations(new DoublePrimitiveTranslation());
     }
 
     private DefaultPrimitiveTranslation(final Builder builder) {

@@ -38,19 +38,19 @@ public class DefaultResponseTranslation implements IResponseTranslation {
         return new Builder();
     }
 
-    private final List<IResponseTranslationConsumer> consumers;
-
-    private DefaultResponseTranslation(final Builder builder) {
-        this.consumers = builder.consumers;
-    }
-
-    public DefaultResponseTranslation(final IObjectMarshaller marshaller) {
-        this(builder()
+    public static Builder standard(final IObjectMarshaller marshaller) {
+        return builder()
                 .withConsumers(new NoContentResponseConsumer())
                 .withConsumers(new PassThroughTranslationConsumer())
                 .withConsumers(new HeaderTranslationConsumer())
                 .withConsumers(new StatusCodeTranslationConsumer())
-                .withConsumers(new BodyResponseTranslationConsumer(marshaller)));
+                .withConsumers(new BodyResponseTranslationConsumer(marshaller));
+    }
+
+    private final List<IResponseTranslationConsumer> consumers;
+
+    private DefaultResponseTranslation(final Builder builder) {
+        this.consumers = builder.consumers;
     }
 
     @Override

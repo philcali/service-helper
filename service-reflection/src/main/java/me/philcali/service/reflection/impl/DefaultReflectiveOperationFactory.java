@@ -31,8 +31,15 @@ public class DefaultReflectiveOperationFactory implements IReflectiveOperationFa
             return this;
         }
     }
+
     public static Builder builder() {
         return new Builder();
+    }
+
+    public static Builder standard(final IObjectMarshaller marshaller) {
+        return builder()
+                .withParameterTranslation(DefaultAnnotatedElementTranslation.parameters(marshaller).build())
+                .withResponseTranslation(DefaultResponseTranslation.standard(marshaller).build());
     }
 
     private final ITranslation<Parameter, IRequest> parameters;
@@ -41,12 +48,6 @@ public class DefaultReflectiveOperationFactory implements IReflectiveOperationFa
     private DefaultReflectiveOperationFactory(final Builder builder) {
         this.parameters = builder.parameters;
         this.response = builder.response;
-    }
-
-    public DefaultReflectiveOperationFactory(final IObjectMarshaller marshaller) {
-        this(builder()
-                .withParameterTranslation(DefaultAnnotatedElementTranslation.parameters(marshaller))
-                .withResponseTranslation(new DefaultResponseTranslation(marshaller)));
     }
 
     @Override

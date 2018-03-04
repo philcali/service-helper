@@ -44,18 +44,18 @@ public class DefaultResourceMethodLocator implements IResourceMethodLocator {
         return new Builder();
     }
 
-    private final Map<Class<? extends Annotation>, IHttpVerbTranslation<Annotation>> locators;
-
-    public DefaultResourceMethodLocator() {
-        this(builder()
+    public static Builder standard() {
+        return builder()
                 .withLocator(HEAD.class, new HeadResourceMethodLocator())
                 .withLocator(OPTIONS.class, new OptionsResourceMethodLocator())
                 .withLocator(DELETE.class, new DeleteResourceMethodLocator())
                 .withLocator(PATCH.class, new PatchResourceMethodLocator())
                 .withLocator(GET.class, new GetResourceMethodLocator())
                 .withLocator(PUT.class, new PutResourceMethodLocator())
-                .withLocator(POST.class, new PostResourceMethodLocator()));
+                .withLocator(POST.class, new PostResourceMethodLocator());
     }
+
+    private final Map<Class<? extends Annotation>, IHttpVerbTranslation<Annotation>> locators;
 
     private  DefaultResourceMethodLocator(final Builder builder) {
         this.locators = builder.locators;

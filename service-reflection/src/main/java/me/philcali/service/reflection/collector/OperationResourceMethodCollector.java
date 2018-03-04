@@ -24,7 +24,7 @@ public class OperationResourceMethodCollector implements IResourceMethodCollecto
     @Override
     public Optional<List<ResourceMethod>> collect(final Object component, final Method method) {
         return locator.find(method)
-                .filter(builder -> method.getReturnType().isAssignableFrom(IOperation.class))
+                .filter(builder -> IOperation.class.isAssignableFrom(method.getReturnType()))
                 .flatMap(builder -> {
                     final Object resource = createResource(component, method);
                     return findApply(resource)

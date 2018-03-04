@@ -43,4 +43,8 @@ public class ReflectiveResourceRouter {
 
     }
 
+    public static Builder builder() {
+        return new Builder();
+    }
+
 }
