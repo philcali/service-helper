@@ -8,6 +8,7 @@ import me.philcali.service.annotations.GET;
 import me.philcali.service.annotations.request.PathParam;
 
 public class BookResource {
+    private Book book;
 
     @GET("/books/{id}")
     public Book get(@PathParam final String id) {
