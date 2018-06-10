@@ -19,6 +19,7 @@ import me.philcali.service.reflection.function.AbstractTargetedTranslation;
 import me.philcali.service.reflection.function.IAnnotatedElementTranslationLocator;
 import me.philcali.service.reflection.function.IPrimitiveTranslation;
 import me.philcali.service.reflection.function.ITranslationLocator;
+import me.philcali.service.reflection.parameter.AuthorizerParamTranslationLocator;
 import me.philcali.service.reflection.parameter.BodyTranslationLocator;
 import me.philcali.service.reflection.parameter.InputParameterTranslationLocator;
 import me.philcali.service.reflection.parameter.ParamTranslationLocator;
@@ -95,6 +96,7 @@ public class DefaultAnnotatedElementTranslation<T extends AnnotatedElement> exte
                         lazyType,
                         DEFAULT_PRIMITIVES,
                         request -> DEFAULT_FORM_DECODER.decode(request.getBody())))
+                .withLocators(new AuthorizerParamTranslationLocator<T>())
                 .withLocators(new BodyTranslationLocator<T>(lazyType, marshaller));
     }
 
