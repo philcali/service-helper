@@ -45,6 +45,18 @@ public class ResourceMethod implements Predicate<IRequest>, IOperation<IRequest,
         this.patternPath = build.patternPath;
         this.operation = build.operation;
     }
+    
+    public String getMethod() {
+        return method;
+    }
+    
+    public String getPatternPath() {
+        return patternPath;
+    }
+    
+    public IOperation<IRequest, IResponse> getOperation() {
+        return operation;
+    }
 
     @Override
     public IResponse apply(final IRequest input) {
