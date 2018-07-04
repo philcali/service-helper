@@ -1,4 +1,4 @@
-package me.philcali.service.gateway.auth;
+package me.philcali.service.function.auth;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;

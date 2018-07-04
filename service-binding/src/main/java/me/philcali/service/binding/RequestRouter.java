@@ -13,7 +13,7 @@ import me.philcali.service.binding.response.Response;
 
 public class RequestRouter implements IOperation<IRequest, IResponse> {
     public static class Builder {
-        private List<ResourceMethod> resources = new ArrayList<>();
+        private List<ResourceMethod> resourceMethods = new ArrayList<>();
         private Supplier<IResponse> notFound;
 
         public RequestRouter build() {
@@ -25,13 +25,13 @@ public class RequestRouter implements IOperation<IRequest, IResponse> {
             return this;
         }
 
-        public Builder withResources(final List<ResourceMethod> resources) {
-            this.resources.addAll(resources);
+        public Builder withResources(final List<ResourceMethod> resourceMethods) {
+            this.resourceMethods.addAll(resourceMethods);
             return this;
         }
 
-        public Builder withResources(ResourceMethod... resources) {
-            return withResources(Arrays.asList(resources));
+        public Builder withResources(ResourceMethod... resourceMethods) {
+            return withResources(Arrays.asList(resourceMethods));
         }
     }
 
@@ -39,19 +39,23 @@ public class RequestRouter implements IOperation<IRequest, IResponse> {
         return new Builder();
     }
 
-    private final List<ResourceMethod> resources;
+    private final List<ResourceMethod> resourcesMethods;
 
     private final Supplier<IResponse> notFound;
 
     private RequestRouter(final Builder builder) {
-        this.resources = builder.resources;
+        this.resourcesMethods = builder.resourceMethods;
         this.notFound = Optional.ofNullable(builder.notFound).orElseGet(() -> Response::notFound);
+    }
+
+    public List<ResourceMethod> getResourceMethods() {
+        return resourcesMethods;
     }
 
     @Override
     public IResponse apply(final IRequest input) {
         try {
-            return resources.stream()
+            return resourcesMethods.stream()
                     .filter(resource -> resource.test(input))
                     .findFirst()
                     .map(resource -> resource.apply(input))
@@ -65,5 +69,4 @@ public class RequestRouter implements IOperation<IRequest, IResponse> {
             return Response.internalError(e);
         }
     }
-
 }

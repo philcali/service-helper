@@ -1,4 +1,4 @@
-package me.philcali.service.gateway;
+package me.philcali.service.marshaller.jackson;
 
 import java.io.IOException;
 

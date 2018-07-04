@@ -1,4 +1,4 @@
-package me.philcali.service.gateway;
+package me.philcali.service.function.auth;
 
 import static org.junit.Assert.assertEquals;
 
@@ -10,8 +10,8 @@ import java.util.Map;
 
 import org.junit.Test;
 
-import me.philcali.service.gateway.auth.IPolicy;
-import me.philcali.service.gateway.auth.Policy;
+import me.philcali.service.function.auth.IPolicy;
+import me.philcali.service.function.auth.Policy;
 
 public class PolicyTest {
 

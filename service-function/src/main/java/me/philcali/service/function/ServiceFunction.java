@@ -1,4 +1,4 @@
-package me.philcali.service.gateway;
+package me.philcali.service.function;
 
 import java.util.List;
 import java.util.ServiceLoader;
@@ -11,11 +11,18 @@ import com.amazonaws.services.lambda.runtime.RequestHandler;
 import me.philcali.service.binding.RequestRouter;
 import me.philcali.service.binding.request.Request;
 import me.philcali.service.binding.response.IResponse;
+import me.philcali.service.marshaller.jackson.ObjectMarshallerJackson;
 import me.philcali.service.reflection.IModule;
+import me.philcali.service.reflection.IObjectMarshaller;
 import me.philcali.service.reflection.ReflectiveResourceRouter;
 import me.philcali.service.reflection.impl.DefaultResourceMethodCollector;
 
 public class ServiceFunction implements RequestHandler<Request, IResponse> {
+    // Injection point for custom service functions
+    protected IObjectMarshaller getObjectMarshaller() {
+        return new ObjectMarshallerJackson();
+    }
+
     @Override
     public IResponse handleRequest(final Request input, final Context context) {
         final ServiceLoader<IModule> moduleLoader = ServiceLoader.load(IModule.class);
@@ -24,7 +31,7 @@ public class ServiceFunction implements RequestHandler<Request, IResponse> {
                 .collect(Collectors.toList());
         final RequestRouter router = ReflectiveResourceRouter.builder()
                 .withComponents(components)
-                .withCollector(new DefaultResourceMethodCollector(new ObjectMarshallerJackson()))
+                .withCollector(new DefaultResourceMethodCollector(getObjectMarshaller()))
                 .build();
         return router.apply(input);
     }
