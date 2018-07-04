@@ -19,9 +19,9 @@ public class ReflectiveResourceRouter {
             for (Object component : components) {
                 Class<?> componentClass = component.getClass();
                 for (Class<?> componentInterface : componentClass.getInterfaces()) {
-                     Arrays.stream(componentInterface.getMethods())
-                             .map(method -> collector.collect(component, method))
-                             .forEach(method -> method.ifPresent(builder::withResources));
+                    Arrays.stream(componentInterface.getMethods())
+                            .map(method -> collector.collect(component, method))
+                            .forEach(method -> method.ifPresent(builder::withResources));
                 }
             }
             return builder.build();

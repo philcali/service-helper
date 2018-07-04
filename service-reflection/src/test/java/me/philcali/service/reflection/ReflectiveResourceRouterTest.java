@@ -10,7 +10,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import me.philcali.service.binding.RequestRouter;
-import me.philcali.service.binding.request.RequestTransfer;
+import me.philcali.service.binding.request.Request;
 import me.philcali.service.binding.response.IResponse;
 import me.philcali.service.reflection.impl.DefaultResourceMethodCollector;
 
@@ -46,7 +46,7 @@ public class ReflectiveResourceRouterTest {
         };
 
         RequestRouter router = builder.withCollector(new DefaultResourceMethodCollector(marshaller)).build();
-        RequestTransfer request = new RequestTransfer();
+        Request request = new Request();
         request.setResource("/people");
         request.setHttpMethod("POST");
         request.setBody("did it");
@@ -59,7 +59,7 @@ public class ReflectiveResourceRouterTest {
     @Test
     public void testDeletePerson() throws Throwable {
         RequestRouter router = builder.build();
-        RequestTransfer request = new RequestTransfer();
+        Request request = new Request();
         request.setResource("/person/{id}");
         request.setHttpMethod("DELETE");
         Map<String, String> pathParameters = new HashMap<>();

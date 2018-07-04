@@ -2,7 +2,7 @@ package me.philcali.service.binding.request;
 
 import java.util.Map;
 
-public class RequestTransfer implements IRequest {
+public class Request implements IRequest {
     private String body;
     private String httpMethod;
     private String path;
