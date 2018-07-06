@@ -1,4 +1,4 @@
-package me.philcali.service.gateway;
+package me.philcali.service.gateway.resource;
 
 import java.util.Comparator;
 

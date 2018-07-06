@@ -1,4 +1,4 @@
-package me.philcali.service.function.auth;
+package me.philcali.service.function;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -16,6 +16,9 @@ import me.philcali.service.annotations.request.Authorizer;
 import me.philcali.service.annotations.request.TokenFilter;
 import me.philcali.service.binding.auth.IAuthResult;
 import me.philcali.service.binding.response.UnauthorizedException;
+import me.philcali.service.function.auth.AuthRequest;
+import me.philcali.service.function.auth.IPolicy;
+import me.philcali.service.function.auth.Policy;
 import me.philcali.service.reflection.IModule;
 
 public class CustomAuthorizerFunction implements RequestHandler<AuthRequest, IPolicy> {
