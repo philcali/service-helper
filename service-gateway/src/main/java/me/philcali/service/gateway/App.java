@@ -5,6 +5,7 @@ import java.util.Arrays;
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 
+import me.philcali.service.gateway.identity.IdentityPool;
 import me.philcali.service.gateway.lambda.ServerlessFunction;
 import me.philcali.service.gateway.resource.ResourceMethodLoader;
 
@@ -18,12 +19,6 @@ public class App {
 
     @Parameter(names = { "--service", "-s" }, required = true)
     private String serviceName;
-
-    @Parameter(names = { "--bucket", "-b" }, required = true)
-    private String s3BucketName;
-
-    @Parameter(names = { "--prefix", "-p" }, required = false)
-    private String s3KeyPrefix = "lambdaFunctions";
 
     @Parameter(names = { "--region", "-r" }, required = false)
     private String regionName;
@@ -51,6 +46,7 @@ public class App {
     }
 
     public void run() {
+        final IdentityPool identityPool = new IdentityPool(regionName);
         Arrays.asList(functionName, authorizerName).forEach(function -> {
             System.out.println(String.format("Uploading %s to %s", jarFile, function));
             final ServerlessFunction serviceFunction = ServerlessFunction.builder()
@@ -58,11 +54,9 @@ public class App {
                     .withFunctionName(function)
                     .withServiceName(serviceName)
                     .withRegion(regionName)
-                    .withS3Prefix(s3KeyPrefix)
-                    .withS3BucketName(s3BucketName)
                     .withTimeout(timeout)
                     .withMemorySize(memorySize)
-                    .withIamRole(iamRole)
+                    .withIamRole(identityPool.getRole(iamRole).getArn())
                     .build();
             serviceFunction.upsert();
         });
