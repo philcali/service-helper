@@ -17,7 +17,7 @@ public interface IResourceMethodCollector {
         } catch (IllegalAccessException
                 | IllegalArgumentException
                 | InvocationTargetException e) {
-            throw new ResourceMethodCreationException(e);
+            throw new ResourceMethodCreationException("Failed to invoke " + method.getName() + " on " + component.getClass(), e);
         }
     }
 }

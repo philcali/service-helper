@@ -189,15 +189,14 @@ public class ApiManifest {
                 .map(HashMap::new)
                 .orElseGet(HashMap::new);
         for (Map.Entry<String, ResourceMethod> entry : methods.entrySet()) {
+            final String lambdaArn = String.format(API_GATEWAY_ARN_URI,
+                    Optional.ofNullable(context.getRegionName()).orElse(DEFAULT_REGION),
+                    functionPool.getFunction(context.getFunctionName()).getArn());
             if (resourceMethods.containsKey(entry.getKey())) {
                 resourceMethods.remove(entry.getKey());
                 continue;
             }
             final Optional<String> authorizerId = extractAuthorizer(entry.getValue(), restApiId);
-            final ServerlessFunction function = functionPool.getFunction(context.getFunctionName());
-            final String lambdaArn = String.format(API_GATEWAY_ARN_URI,
-                    Optional.ofNullable(context.getRegionName()).orElse(DEFAULT_REGION),
-                    function.getArn());
             // TODO: reflect parameter types and models ... saving that for another day
             gateway.putMethod(new PutMethodRequest()
                     .withAuthorizationType(authorizerId.map(a -> "CUSTOM").orElse("NONE"))

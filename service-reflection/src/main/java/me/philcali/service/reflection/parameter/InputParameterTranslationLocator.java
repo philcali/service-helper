@@ -44,7 +44,7 @@ public class InputParameterTranslationLocator<T extends AnnotatedElement> implem
                 }
             }
         } catch (Exception e) {
-            throw new ResourceMethodCreationException(e);
+            throw new ResourceMethodCreationException("Failed to create request type " + lazyType.apply(parameter), e);
         }
         return result;
     }
