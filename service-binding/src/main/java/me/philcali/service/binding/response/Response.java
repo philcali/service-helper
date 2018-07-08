@@ -99,6 +99,10 @@ public class Response implements IResponse {
         return builder().withStatusCode(401).build();
     }
 
+    public static Response notModified() {
+        return builder().withStatusCode(304).build();
+    }
+
     private final int statusCode;
     private final Map<String, String> headers;
     private final String body;

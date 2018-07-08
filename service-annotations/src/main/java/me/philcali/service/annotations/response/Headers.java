@@ -1,4 +1,4 @@
-package me.philcali.service.annotations.request;
+package me.philcali.service.annotations.response;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -6,7 +6,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 @Retention(RetentionPolicy.RUNTIME)
-@Target({ ElementType.FIELD, ElementType.METHOD, ElementType.PARAMETER })
-public @interface HeaderParam {
-    String value() default "";
+@Target({ ElementType.METHOD, ElementType.PARAMETER })
+public @interface Headers {
+    Header[] value();
 }

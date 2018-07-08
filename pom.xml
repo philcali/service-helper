@@ -17,6 +17,7 @@
     <module>service-gateway</module>
     <module>service-function</module>
     <module>service-marshaller-jackson</module>
+    <module>service-assets</module>
   </modules>
 
   <properties>
