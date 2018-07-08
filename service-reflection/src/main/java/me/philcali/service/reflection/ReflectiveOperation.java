@@ -27,6 +27,10 @@ public class ReflectiveOperation implements IOperation<IRequest, IResponse> {
         this.responseTranslation = responseTranslation;
     }
 
+    public Method getMethod() {
+        return method;
+    }
+
     @Override
     public IResponse apply(final IRequest input) {
         try {

@@ -6,35 +6,29 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Objects;
-import java.util.Optional;
 
 import com.amazonaws.services.lambda.AWSLambda;
-import com.amazonaws.services.lambda.AWSLambdaClientBuilder;
+import com.amazonaws.services.lambda.model.AddPermissionRequest;
 import com.amazonaws.services.lambda.model.CreateFunctionRequest;
 import com.amazonaws.services.lambda.model.FunctionCode;
+import com.amazonaws.services.lambda.model.GetFunctionConfigurationRequest;
+import com.amazonaws.services.lambda.model.GetFunctionConfigurationResult;
 import com.amazonaws.services.lambda.model.ResourceConflictException;
 import com.amazonaws.services.lambda.model.Runtime;
 import com.amazonaws.services.lambda.model.UpdateFunctionCodeRequest;
 import com.amazonaws.services.lambda.model.UpdateFunctionConfigurationRequest;
 
+import me.philcali.service.gateway.AppContext;
+
 public class ServerlessFunction {
     public static final class Builder {
-        private String serviceName;
         private String functionName;
-        private String functionCode;
-        private String iamRole;
-        private int timeout;
-        private int memorySize;
-        private String region;
+        private AppContext context;
+        private String roleArn;
         private AWSLambda lambda;
 
-        public Builder withRegion(final String region) {
-            this.region = region;
-            return this;
-        }
-
-        public Builder withServiceName(final String serviceName) {
-            this.serviceName = serviceName;
+        public Builder withContext(final AppContext context) {
+            this.context = context;
             return this;
         }
 
@@ -43,41 +37,22 @@ public class ServerlessFunction {
             return this;
         }
 
-        public Builder withFunctionCode(final String functionCode) {
-            this.functionCode = functionCode;
+        public Builder withLambda(final AWSLambda lambda) {
+            this.lambda = lambda;
             return this;
         }
 
-        public Builder withTimeout(final int timeout) {
-            this.timeout = timeout;
-            return this;
-        }
-
-        public Builder withMemorySize(final int memorySize) {
-            this.memorySize = memorySize;
-            return this;
-        }
-
-        public Builder withIamRole(final String iamRole) {
-            this.iamRole = iamRole;
+        public Builder withRoleArn(final String roleArn) {
+            this.roleArn = roleArn;
             return this;
         }
 
         public ServerlessFunction build() {
-            Objects.requireNonNull(iamRole, "Must supply an iam role");
-            Objects.requireNonNull(serviceName, "Must supply a service name");
-            Objects.requireNonNull(functionCode, "Must supply a function source");
+            Objects.requireNonNull(context, "Must supply an app context");
             Objects.requireNonNull(functionName, "Must supply a function name");
-            createLambdaClient();
+            Objects.requireNonNull(lambda, "Must supply a lambda client!");
+            Objects.requireNonNull(roleArn, "Role ARN must exists!");
             return new ServerlessFunction(this);
-        }
-
-        private void createLambdaClient() {
-            if (Objects.isNull(lambda)) {
-                lambda = Optional.ofNullable(region)
-                        .map(r -> AWSLambdaClientBuilder.standard().withRegion(r).build())
-                        .orElseGet(AWSLambdaClientBuilder::defaultClient);
-            }
         }
     }
 
@@ -85,42 +60,37 @@ public class ServerlessFunction {
         return new Builder();
     }
 
-    private final String serviceName;
     private final String functionName;
-    private final String functionCode;
-    private final String iamRole;
-    private final int timeout;
-    private final int memorySize;
-    private AWSLambda lambda;
+    private final String roleArn;
+    private final AppContext context;
+    private final AWSLambda lambda;
 
     public ServerlessFunction(final Builder builder) {
-        this.functionCode = builder.functionCode;
         this.functionName = builder.functionName;
-        this.iamRole = builder.iamRole;
-        this.timeout = builder.timeout;
-        this.memorySize = builder.memorySize;
         this.lambda = builder.lambda;
-        this.serviceName = builder.serviceName;
+        this.context = builder.context;
+        this.roleArn = builder.roleArn;
     }
 
     public void upsert() {
         try {
-            final String lambdaFunctionName = serviceName + functionName;
+            final String lambdaFunctionName = context.getServiceName() + functionName;
             final FunctionCode code = getFunctionCode();
             try {
                 lambda.createFunction(new CreateFunctionRequest()
                         .withCode(getFunctionCode())
                         .withFunctionName(lambdaFunctionName)
-                        .withDescription(String.format("Service function for %s", serviceName))
+                        .withDescription(String.format("Service function for %s", context.getServiceName()))
                         .withHandler(String.format("me.philcali.service.function.%s::handleRequest", functionName))
                         .withRuntime(Runtime.Java8)
-                        .withTimeout(timeout)
-                        .withMemorySize(memorySize)
-                        .withRole(iamRole));
+                        .withTimeout(context.getTimeout())
+                        .withMemorySize(context.getMemorySize())
+                        .withRole(roleArn));
             } catch (ResourceConflictException e) {
                 lambda.updateFunctionConfiguration(new UpdateFunctionConfigurationRequest()
-                        .withTimeout(timeout)
-                        .withMemorySize(memorySize));
+                        .withFunctionName(lambdaFunctionName)
+                        .withTimeout(context.getTimeout())
+                        .withMemorySize(context.getMemorySize()));
                 lambda.updateFunctionCode(new UpdateFunctionCodeRequest()
                         .withFunctionName(lambdaFunctionName)
                         .withZipFile(code.getZipFile()));
@@ -130,8 +100,27 @@ public class ServerlessFunction {
         }
     }
 
+    public String getArn() {
+        final GetFunctionConfigurationResult result = lambda.getFunctionConfiguration(new GetFunctionConfigurationRequest()
+                .withFunctionName(context.getServiceName() + functionName));
+        return result.getFunctionArn();
+    }
+
+    public void addPermission(final String sourceArn) {
+        try {
+            lambda.addPermission(new AddPermissionRequest()
+                    .withFunctionName(context.getServiceName() + functionName)
+                    .withStatementId(context.getServiceName() + "Invocations")
+                    .withPrincipal("apigateway.amazonaws.com")
+                    .withSourceArn(sourceArn)
+                    .withAction("lambda:InvokeFunction"));
+        } catch (ResourceConflictException rce) {
+            // ignore
+        }
+    }
+
     private FunctionCode getFunctionCode() throws IOException {
-        final Path jarPath = Paths.get(functionCode);
+        final Path jarPath = Paths.get(context.getJarFile());
         return new FunctionCode().withZipFile(ByteBuffer.wrap(Files.readAllBytes(jarPath)));
     }
 }

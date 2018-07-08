@@ -21,13 +21,14 @@ import me.philcali.service.reflection.IModule;
 import me.philcali.service.reflection.ReflectiveResourceRouter;
 import me.philcali.service.reflection.impl.DefaultResourceMethodCollector;
 
-public class ResourceMethodLoader {
+public class ResourceMethodLoader implements IResourceLoader {
     private final String jarFile;
 
     public ResourceMethodLoader(final String jarFile) {
         this.jarFile = jarFile;
     }
 
+    @Override
     public Map<String, Map<String, ResourceMethod>> getMethods() {
         final List<ResourceMethod> methods = getResourceMethods();
         Collections.sort(methods, new ResourceMethodComparator());
