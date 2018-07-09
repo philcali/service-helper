@@ -18,6 +18,9 @@
     <module>service-function</module>
     <module>service-marshaller-jackson</module>
     <module>service-assets</module>
+    <module>service-netty</module>
+    <module>service-netty-maven-plugin</module>
+    <module>service-reflection-system</module>
   </modules>
 
   <properties>
