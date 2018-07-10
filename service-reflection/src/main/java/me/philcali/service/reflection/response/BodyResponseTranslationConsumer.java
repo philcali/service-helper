@@ -5,6 +5,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 
 import me.philcali.service.annotations.request.Body;
+import me.philcali.service.binding.IOperation;
 import me.philcali.service.binding.response.Response.Builder;
 import me.philcali.service.reflection.IObjectMarshaller;
 
@@ -23,7 +24,7 @@ public class BodyResponseTranslationConsumer implements IResponseTranslationCons
         } else {
             final Class<?> resultClass = result.getClass();
             try {
-                if (resultClass.getAnnotation(Body.class) != null) {
+                if (resultClass.getAnnotation(Body.class) != null || !IOperation.class.isAssignableFrom(method.getDeclaringClass())) {
                     builder.withBody(marshaller.marshall(result));
                 } else {
                     for (Field field : resultClass.getDeclaredFields()) {

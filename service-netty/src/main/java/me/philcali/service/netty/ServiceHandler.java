@@ -10,12 +10,18 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import io.netty.buffer.Unpooled;
+import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
-import io.netty.handler.codec.http.DefaultFullHttpRequest;
 import io.netty.handler.codec.http.DefaultFullHttpResponse;
+import io.netty.handler.codec.http.HttpContent;
+import io.netty.handler.codec.http.HttpHeaderNames;
+import io.netty.handler.codec.http.HttpHeaderValues;
+import io.netty.handler.codec.http.HttpRequest;
 import io.netty.handler.codec.http.HttpResponseStatus;
+import io.netty.handler.codec.http.HttpUtil;
 import io.netty.handler.codec.http.HttpVersion;
+import io.netty.handler.codec.http.LastHttpContent;
 import io.netty.handler.codec.http.QueryStringDecoder;
 import me.philcali.service.binding.RequestRouter;
 import me.philcali.service.binding.ResourceMethod;
@@ -24,8 +30,11 @@ import me.philcali.service.binding.request.Request;
 import me.philcali.service.binding.response.IResponse;
 
 public class ServiceHandler extends SimpleChannelInboundHandler<Object> {
-    private static final Pattern ROUTE_PATH = Pattern.compile("\\({[^\\}]+\\})");
+    private static final Pattern ROUTE_PATH = Pattern.compile("\\{([^\\}]+)\\}");
     private final RequestRouter router;
+
+    private HttpRequest request;
+    private StringBuilder buffer = new StringBuilder();
 
     public ServiceHandler(final RequestRouter router) {
         this.router = router;
@@ -33,31 +42,56 @@ public class ServiceHandler extends SimpleChannelInboundHandler<Object> {
 
     @Override
     protected void channelRead0(final ChannelHandlerContext ctx, final Object req) throws Exception {
-        final DefaultFullHttpRequest request = (DefaultFullHttpRequest) req;
-        final DefaultFullHttpResponse response = router.compose(this::translateRequest)
-                .andThen(this::translateReponse)
-                .apply(request);
-        ctx.writeAndFlush(response);
+        if (req instanceof HttpRequest) {
+            request = (HttpRequest) req;
+        } else if (req instanceof HttpContent) {
+            final HttpContent content = (HttpContent) req;
+            buffer.append(new String(content.content().array(), StandardCharsets.UTF_8));
+        }
+        if (req instanceof LastHttpContent){
+            final DefaultFullHttpResponse response = router
+                    .compose(this::translateRequest)
+                    .andThen(this::translateReponse)
+                    .apply(request);
+            ctx.write(response);
+            if (!HttpUtil.isKeepAlive(request)) {
+                ctx.writeAndFlush(Unpooled.EMPTY_BUFFER).addListener(ChannelFutureListener.CLOSE);
+            }
+        }
+    }
+
+    @Override
+    public void channelReadComplete(final ChannelHandlerContext ctx) throws Exception {
+        ctx.flush();
     }
 
     private DefaultFullHttpResponse translateReponse(final IResponse response) {
         final DefaultFullHttpResponse res = new DefaultFullHttpResponse(
                 HttpVersion.HTTP_1_1,
                 HttpResponseStatus.valueOf(response.getStatusCode()));
-        response.getHeaders().forEach((key, value) -> {
+        Optional.ofNullable(response.getHeaders()).ifPresent(headers -> headers.forEach((key, value) -> {
             res.headers().add(key, value);
-        });
-        Optional.ofNullable(response.getBody())
+        }));
+        if (HttpUtil.isKeepAlive(request)) {
+            res.headers().set(HttpHeaderNames.CONNECTION, HttpHeaderValues.KEEP_ALIVE);
+        }
+        return Optional.ofNullable(response.getBody())
                 .filter(body -> !body.isEmpty())
-                .ifPresent(body -> res.replace(Unpooled.copiedBuffer(body.getBytes(StandardCharsets.UTF_8))));
-        return res;
+                .map(body -> {
+                    final byte[] bytes = body.getBytes(StandardCharsets.UTF_8);
+                    final DefaultFullHttpResponse replaced = (DefaultFullHttpResponse) res.replace(Unpooled.copiedBuffer(bytes));
+                    replaced.headers().setInt(HttpHeaderNames.CONTENT_LENGTH, bytes.length);
+                    return replaced;
+                })
+                .orElse(res);
     }
 
-    private IRequest translateRequest(final DefaultFullHttpRequest req) {
+    private IRequest translateRequest(final HttpRequest req) {
         final Request request = new Request();
         final String fullPath = req.uri().split("\\?")[0];
         request.setPath(fullPath);
         request.setHttpMethod(req.method().name());
+        request.setBody(buffer.toString());
         setRequestPathInformation(request, fullPath);
         final Map<String, String> headers = new HashMap<>();
         req.headers().forEach(entry -> {
@@ -84,6 +118,8 @@ public class ServiceHandler extends SimpleChannelInboundHandler<Object> {
                 final Pattern pathPattern = Pattern.compile(matcher.replaceAll("\\(\\[^/\\]+\\)/?"));
                 final Matcher patternMatcher = pathPattern.matcher(fullPath);
                 if (patternMatcher.find() && matcher.groupCount() == patternMatcher.groupCount()) {
+                    request.setResource(method.getPatternPath());
+                    matcher.reset(method.getPatternPath()).find();
                     for (int groupIndex = 1; groupIndex <= patternMatcher.groupCount(); groupIndex++) {
                         pathParameters.put(matcher.group(groupIndex), patternMatcher.group(groupIndex));
                     }
@@ -91,5 +127,12 @@ public class ServiceHandler extends SimpleChannelInboundHandler<Object> {
                 }
             }
         }
+    }
+
+    @Override
+    public void exceptionCaught(final ChannelHandlerContext ctx, final Throwable cause) throws Exception {
+        final DefaultFullHttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.INTERNAL_SERVER_ERROR);
+        ctx.writeAndFlush(response);
+        super.exceptionCaught(ctx, cause);
     }
 }

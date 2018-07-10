@@ -1,13 +1,21 @@
 package me.philcali.service.binding.response;
 
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import me.philcali.service.binding.cookie.CookieEncoder;
+import me.philcali.service.binding.cookie.ICookie;
+
 public class Response implements IResponse {
+    private static final CookieEncoder DEFAULT_ENCODER = new CookieEncoder();
+
     public static class Builder {
         private int statusCode;
         private Map<String, String> headers;
+        private List<ICookie> cookies;
         private String body;
         private Throwable exception;
 
@@ -46,6 +54,14 @@ public class Response implements IResponse {
             return this;
         }
 
+        public Builder withCookies(final ICookie ... cookies) {
+            // This is a last write win situation, regarding the limitations of API gateway
+            Arrays.stream(cookies).map(DEFAULT_ENCODER::encode).forEach(encoded -> {
+                withHeaders("set-cookie", encoded);
+            });
+            return this;
+        }
+
         public Builder withHeaders(final String name, final String value) {
             final Map<String, String> newHeaders = Optional.ofNullable(headers).orElseGet(HashMap::new);
             newHeaders.put(name, value);
@@ -60,7 +76,11 @@ public class Response implements IResponse {
     }
 
     public static Builder builder() {
-        return new Builder().withStatusCode(200);
+        return new Builder().withStatusCode(200).withHeaders("Content-Length", "0");
+    }
+
+    public static Builder redirect(final String location) {
+        return builder().withStatusCode(302).withHeaders("Location", location);
     }
 
     public static Response forbidden() {
@@ -84,7 +104,7 @@ public class Response implements IResponse {
     }
 
     public static Response notFound() {
-        return builder().withStatusCode(404).build();
+        return builder().withStatusCode(404).withHeaders("Content-Length", "0").build();
     }
 
     public static Response ok() {

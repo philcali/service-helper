@@ -3,9 +3,8 @@ package me.philcali.service.netty;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.socket.SocketChannel;
-import io.netty.handler.codec.http.HttpObjectAggregator;
 import io.netty.handler.codec.http.HttpRequestDecoder;
-import io.netty.handler.codec.http.HttpResponseDecoder;
+import io.netty.handler.codec.http.HttpResponseEncoder;
 import me.philcali.service.binding.RequestRouter;
 
 public class ServiceInitializer extends ChannelInitializer<SocketChannel> {
@@ -19,8 +18,7 @@ public class ServiceInitializer extends ChannelInitializer<SocketChannel> {
     protected void initChannel(final SocketChannel channel) throws Exception {
         ChannelPipeline pipeline = channel.pipeline();
         pipeline.addLast(new HttpRequestDecoder());
-        pipeline.addLast(new HttpObjectAggregator(1048576));
-        pipeline.addLast(new HttpResponseDecoder());
+        pipeline.addLast(new HttpResponseEncoder());
         pipeline.addLast(new ServiceHandler(router));
     }
 }
