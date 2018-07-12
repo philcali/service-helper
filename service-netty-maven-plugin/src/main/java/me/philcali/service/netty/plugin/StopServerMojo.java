@@ -19,7 +19,7 @@ import org.apache.maven.plugins.annotations.Parameter;
 public class StopServerMojo extends AbstractMojo {
     private static final Pattern PID_REGEX = Pattern.compile("^(\\d+).*");
 
-    @Parameter(property = "service.system.pid", defaultValue = "${project.name}")
+    @Parameter(property = "service.pid", defaultValue = "${project.name}")
     private String processLookup;
 
     @Override

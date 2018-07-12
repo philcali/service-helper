@@ -30,9 +30,29 @@
           </execution>
         </executions>
       </plugin>
+      <plugin>
+        <groupId>me.philcali</groupId>
+        <artifactId>s3-maven-plugin</artifactId>
+        <version>0.0.1-SNAPSHOT</version>
+        <executions>
+          <execution>
+            <phase>package</phase>
+            <goals>
+              <goal>upload</goal>
+            </goals>
+          </execution>
+        </executions>
+        <configuration>
+          <bucket>philcali.me</bucket>
+          <prefix>projects/${project.parent.artifactId}</prefix>
+          <region>us-east-1</region>
+        </configuration>
+      </plugin>
     </plugins>
   </build>
   <properties>
+    <s3.prefix>projects/${project.parent.artifactId}</s3.prefix>
+    <s3.bucket>philcali.me</s3.bucket>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
   </properties>
 </project>
