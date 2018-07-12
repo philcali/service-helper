@@ -1,8 +1,11 @@
 package me.philcali.service.netty;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.StringJoiner;
 import java.util.regex.Matcher;
@@ -23,6 +26,7 @@ import io.netty.handler.codec.http.HttpUtil;
 import io.netty.handler.codec.http.HttpVersion;
 import io.netty.handler.codec.http.LastHttpContent;
 import io.netty.handler.codec.http.QueryStringDecoder;
+import io.netty.util.CharsetUtil;
 import me.philcali.service.binding.RequestRouter;
 import me.philcali.service.binding.ResourceMethod;
 import me.philcali.service.binding.request.IRequest;
@@ -72,10 +76,17 @@ public class ServiceHandler extends SimpleChannelInboundHandler<Object> {
         Optional.ofNullable(response.getHeaders()).ifPresent(headers -> headers.forEach((key, value) -> {
             res.headers().add(key, value);
         }));
+        String resBody = response.getBody();
+        if (Objects.nonNull(response.getException())) {
+            final StringWriter writer = new StringWriter();
+            response.getException().printStackTrace(new PrintWriter(writer));
+            resBody = writer.toString();
+            res.headers().set(HttpHeaderNames.CONTENT_TYPE, "text/plain");
+        }
         if (HttpUtil.isKeepAlive(request)) {
             res.headers().set(HttpHeaderNames.CONNECTION, HttpHeaderValues.KEEP_ALIVE);
         }
-        return Optional.ofNullable(response.getBody())
+        return Optional.ofNullable(resBody)
                 .filter(body -> !body.isEmpty())
                 .map(body -> {
                     final byte[] bytes = body.getBytes(StandardCharsets.UTF_8);
@@ -131,7 +142,12 @@ public class ServiceHandler extends SimpleChannelInboundHandler<Object> {
 
     @Override
     public void exceptionCaught(final ChannelHandlerContext ctx, final Throwable cause) throws Exception {
-        final DefaultFullHttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.INTERNAL_SERVER_ERROR);
+        final StringWriter writer = new StringWriter();
+        cause.printStackTrace(new PrintWriter(writer));
+        final DefaultFullHttpResponse response = new DefaultFullHttpResponse(
+                HttpVersion.HTTP_1_1,
+                HttpResponseStatus.INTERNAL_SERVER_ERROR,
+                Unpooled.copiedBuffer(writer.toString(), CharsetUtil.UTF_8));
         ctx.writeAndFlush(response);
         super.exceptionCaught(ctx, cause);
     }
