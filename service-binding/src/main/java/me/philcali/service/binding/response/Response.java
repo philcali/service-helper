@@ -2,7 +2,6 @@ package me.philcali.service.binding.response;
 
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -15,7 +14,6 @@ public class Response implements IResponse {
     public static class Builder {
         private int statusCode;
         private Map<String, String> headers;
-        private List<ICookie> cookies;
         private String body;
         private Throwable exception;
 
