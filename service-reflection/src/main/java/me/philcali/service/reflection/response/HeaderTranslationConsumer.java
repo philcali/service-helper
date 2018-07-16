@@ -17,7 +17,7 @@ public class HeaderTranslationConsumer implements IResponseTranslationConsumer {
         final Headers headers = method.getAnnotation(Headers.class);
         if (Objects.nonNull(headers)) {
             pullFromHeadersAnnotation(headers, builder);
-        } else {
+        } else if (Objects.nonNull(result)) {
             pullFromResult(result, builder);
         }
         return Control.CONTINUE;
