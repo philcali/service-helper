@@ -1,5 +1,6 @@
 package me.philcali.service.reflection;
 
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 
@@ -41,6 +42,8 @@ public class ReflectiveOperation implements IOperation<IRequest, IResponse> {
             }
             final Object result = method.invoke(object, inputs);
             return responseTranslation.translate(result, method);
+        } catch (InvocationTargetException ie) {
+            throw (RuntimeException) ie.getCause();
         } catch (Exception e) {
             return Response.internalError(e);
         }
