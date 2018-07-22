@@ -1,6 +1,7 @@
 package me.philcali.service.reflection.system;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
@@ -36,10 +37,14 @@ public class DynamicModuleComponentProvider implements IComponentProvider {
         try {
             final URL[] urls = new URL[jarFiles.size()];
             for (int index = 0; index < jarFiles.size(); index++) {
-                urls[index] = new File(jarFiles.get(0)).toURI().toURL();
+                final File jarFile = new File(jarFiles.get(index));
+                if (!jarFile.exists()) {
+                    throw new FileNotFoundException("File " + jarFile + " does not exist");
+                }
+                urls[index] = jarFile.toURI().toURL();
             }
             return urls;
-        } catch (MalformedURLException e) {
+        } catch (MalformedURLException | FileNotFoundException e) {
             throw new RuntimeException(e);
         }
     }

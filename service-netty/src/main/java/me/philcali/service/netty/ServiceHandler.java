@@ -32,12 +32,14 @@ import io.netty.handler.codec.http.LastHttpContent;
 import io.netty.handler.codec.http.QueryStringDecoder;
 import io.netty.util.CharsetUtil;
 import me.philcali.service.annotations.request.Authorizer;
+import me.philcali.service.annotations.request.TokenFilter;
 import me.philcali.service.binding.RequestRouter;
 import me.philcali.service.binding.ResourceMethod;
 import me.philcali.service.binding.auth.IAuthResult;
 import me.philcali.service.binding.request.IRequest;
 import me.philcali.service.binding.request.Request;
 import me.philcali.service.binding.request.RequestContextTransfer;
+import me.philcali.service.binding.response.HttpException;
 import me.philcali.service.binding.response.IResponse;
 import me.philcali.service.reflection.ReflectiveOperation;
 import me.philcali.service.reflection.system.IComponentProvider;
@@ -152,8 +154,7 @@ public class ServiceHandler extends SimpleChannelInboundHandler<Object> {
                                     .map(componentMethod -> invokeAuthorizer(componentMethod, component));
                         })
                         .findFirst();
-                return Optional.ofNullable(request.getHeaders().get("authorization"))
-                        .flatMap(header -> authFunction.map(thunk -> thunk.apply(header)))
+                return authFunction.map(thunk -> thunk.apply(request.getHeaders().get("authorization")))
                         .map(result -> {
                             final Map<String, String> params = new HashMap<>();
                             params.put("principalId", result.getPrincipalId());
@@ -173,8 +174,14 @@ public class ServiceHandler extends SimpleChannelInboundHandler<Object> {
 
     private Function<String, IAuthResult> invokeAuthorizer(final Method componentMethod, final Object component) {
         try {
-            return (Function<String, IAuthResult>) componentMethod.invoke(component);
+            final Function<String, IAuthResult> thunk = (Function<String, IAuthResult>) componentMethod.invoke(component);
+            final TokenFilter filter = componentMethod.getAnnotation(TokenFilter.class);
+            if (Objects.nonNull(filter)) {
+                return thunk.compose(filter.value().newInstance());
+            }
+            return thunk;
         } catch (IllegalAccessException
+                | InstantiationException
                 | IllegalArgumentException
                 | InvocationTargetException e) {
             throw new RuntimeException(e);
@@ -199,6 +206,9 @@ public class ServiceHandler extends SimpleChannelInboundHandler<Object> {
                     protectedContext(request, method).ifPresent(request::setRequestContext);
                     break;
                 }
+            } else if (method.getPatternPath().equals(fullPath)) {
+                protectedContext(request, method).ifPresent(request::setRequestContext);
+                break;
             }
         }
     }
@@ -207,11 +217,17 @@ public class ServiceHandler extends SimpleChannelInboundHandler<Object> {
     public void exceptionCaught(final ChannelHandlerContext ctx, final Throwable cause) throws Exception {
         final StringWriter writer = new StringWriter();
         cause.printStackTrace(new PrintWriter(writer));
-        final DefaultFullHttpResponse response = new DefaultFullHttpResponse(
-                HttpVersion.HTTP_1_1,
-                HttpResponseStatus.INTERNAL_SERVER_ERROR,
-                Unpooled.copiedBuffer(writer.toString(), CharsetUtil.UTF_8));
-        ctx.writeAndFlush(response);
+        final DefaultFullHttpResponse response;
+        if (cause instanceof HttpException) {
+            response = new DefaultFullHttpResponse(
+                    HttpVersion.HTTP_1_1,
+                    HttpResponseStatus.valueOf(((HttpException) cause).getStatusCode()));
+        } else {
+            response = new DefaultFullHttpResponse(
+                    HttpVersion.HTTP_1_1,
+                    HttpResponseStatus.INTERNAL_SERVER_ERROR);
+        }
+        ctx.writeAndFlush(response.replace(Unpooled.copiedBuffer(writer.toString(), CharsetUtil.UTF_8)));
         super.exceptionCaught(ctx, cause);
     }
 }
