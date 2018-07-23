@@ -195,7 +195,16 @@ public class ServiceHandler extends SimpleChannelInboundHandler<Object> {
         for (final ResourceMethod method : router.getResourceMethods()) {
             final Matcher matcher = ROUTE_PATH.matcher(method.getPatternPath());
             if (matcher.find()) {
-                final Pattern pathPattern = Pattern.compile(matcher.replaceAll("\\(\\[^/\\]+\\)/?") + "$");
+                String replacedPattern = method.getPatternPath();
+                for (int matched = 1; matched <= matcher.groupCount(); matched++) {
+                    final String groupMatch = matcher.group(matched);
+                    if (groupMatch.equals("proxy+")) {
+                        replacedPattern = replacedPattern.replace("{" + groupMatch + "}", "(.+)$");
+                    } else {
+                        replacedPattern = replacedPattern.replace("{" + groupMatch + "}", "\\(\\[^/\\]+\\)/?$");
+                    }
+                }
+                final Pattern pathPattern = Pattern.compile(replacedPattern);
                 final Matcher patternMatcher = pathPattern.matcher(fullPath);
                 if (patternMatcher.find() && matcher.groupCount() == patternMatcher.groupCount()) {
                     request.setResource(method.getPatternPath());

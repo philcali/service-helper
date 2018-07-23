@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 import java.net.URLConnection;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.Objects;
 import java.util.StringJoiner;
@@ -52,7 +53,9 @@ public class LocalAssetLoader implements IAssetLoader {
     }
 
     @Override
-    public IAsset load(final String type, final String name) {
-        return new LocalAsset(new StringJoiner("/").add(assetRoot).add(type).add(name).toString());
+    public IAsset load(final String ... parts) {
+        final StringJoiner joiner = new StringJoiner("/").add(assetRoot);
+        Arrays.stream(parts).forEach(joiner::add);
+        return new LocalAsset(joiner.toString());
     }
 }

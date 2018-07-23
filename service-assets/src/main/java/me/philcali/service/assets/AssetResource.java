@@ -12,6 +12,7 @@ import javax.inject.Inject;
 import javax.inject.Named;
 
 import me.philcali.service.annotations.GET;
+import me.philcali.service.annotations.NoExport;
 import me.philcali.service.annotations.request.HeaderParam;
 import me.philcali.service.annotations.request.PathParam;
 import me.philcali.service.binding.response.HttpException;
@@ -20,25 +21,33 @@ import me.philcali.service.binding.response.Response;
 
 public class AssetResource {
     public static final String MAX_AGE_NAME = "asset.max.age";
+    public static final String INDEX_DOCUMENT = "asset.index.document";
     private final IAssetLoader resources;
     private final int maxAge;
+    private final String index;
+
 
     @Inject
-    public AssetResource(final IAssetLoader resources, @Named(MAX_AGE_NAME) final int maxAge) {
+    public AssetResource(
+            final IAssetLoader resources,
+            @Named(MAX_AGE_NAME) final int maxAge,
+            @Named(INDEX_DOCUMENT) final String index) {
         this.resources = resources;
         this.maxAge = maxAge;
+        this.index = index;
     }
 
+    @NoExport
     @GET("/")
     public IResponse getIndex(@HeaderParam("If-Modified-Since") final String requestModified) {
-        return getResource(requestModified, "html", "index.html");
+        return getResource(requestModified, index);
     }
 
-    @GET("/asset/{type}/{name}")
+    @NoExport
+    @GET("/{proxy+}")
     public IResponse getResource(
             @HeaderParam("If-Modified-Since") final String requestModified,
-            @PathParam final String type,
-            @PathParam final String name) {
+            @PathParam("proxy+") final String fullPath) {
         try {
             final SimpleDateFormat sdf = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss z");
             sdf.setTimeZone(TimeZone.getTimeZone("GMT"));
@@ -46,7 +55,7 @@ public class AssetResource {
             if (Objects.nonNull(requestModified)) {
                 cacheDate = sdf.parse(requestModified);
             }
-            final IAsset asset = resources.load(type, name);
+            final IAsset asset = resources.load(fullPath.split("/"));
             final Date lastModified = asset.getLastModified();
             return Optional.ofNullable(cacheDate)
                     .filter(lastModified::before)
@@ -62,11 +71,11 @@ public class AssetResource {
                                 .withHeaders("Content-Length", Integer.toString(content.length()))
                                 .build();
                         } catch (IOException ie) {
-                            throw new HttpException(500, "Unable to load " + name);
+                            throw new HttpException(500, "Unable to load " + fullPath);
                         }
                     });
         } catch (NullPointerException npe) {
-            throw new HttpException(404, "Missing resource " + name);
+            throw new HttpException(404, "Missing resource " + fullPath);
         } catch (ParseException pe) {
             throw new HttpException(400, "Invalid client request date!");
         }

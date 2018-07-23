@@ -6,6 +6,7 @@ import java.lang.reflect.Method;
 
 import me.philcali.service.annotations.request.Body;
 import me.philcali.service.binding.IOperation;
+import me.philcali.service.binding.response.IResponse;
 import me.philcali.service.binding.response.Response.Builder;
 import me.philcali.service.reflection.IObjectMarshaller;
 
@@ -21,6 +22,8 @@ public class BodyResponseTranslationConsumer implements IResponseTranslationCons
         Control control = Control.CONTINUE;
         if (result instanceof String) {
             builder.withBody((String) result);
+        } else if (result instanceof IResponse) {
+            return control;
         } else {
             final Class<?> resultClass = result.getClass();
             try {

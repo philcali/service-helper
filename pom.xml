@@ -21,6 +21,7 @@
     <module>service-netty</module>
     <module>service-netty-maven-plugin</module>
     <module>service-reflection-system</module>
+    <module>service-assests-proxy</module>
   </modules>
 
   <properties>
