@@ -6,6 +6,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -102,7 +103,10 @@ public class ServiceHandler extends SimpleChannelInboundHandler<Object> {
         return Optional.ofNullable(resBody)
                 .filter(body -> !body.isEmpty())
                 .map(body -> {
-                    final byte[] bytes = body.getBytes(StandardCharsets.UTF_8);
+                    byte[] bytes = body.getBytes(StandardCharsets.UTF_8);
+                    if (response.isRaw()) {
+                        bytes = Base64.getUrlDecoder().decode(body);
+                    }
                     final DefaultFullHttpResponse replaced = (DefaultFullHttpResponse) res.replace(Unpooled.copiedBuffer(bytes));
                     replaced.headers().setInt(HttpHeaderNames.CONTENT_LENGTH, bytes.length);
                     return replaced;
@@ -199,12 +203,12 @@ public class ServiceHandler extends SimpleChannelInboundHandler<Object> {
                 for (int matched = 1; matched <= matcher.groupCount(); matched++) {
                     final String groupMatch = matcher.group(matched);
                     if (groupMatch.equals("proxy+")) {
-                        replacedPattern = replacedPattern.replace("{" + groupMatch + "}", "(.+)$");
+                        replacedPattern = replacedPattern.replace("{" + groupMatch + "}", "(.+)");
                     } else {
-                        replacedPattern = replacedPattern.replace("{" + groupMatch + "}", "\\(\\[^/\\]+\\)/?$");
+                        replacedPattern = replacedPattern.replace("{" + groupMatch + "}", "([^/]+)/?");
                     }
                 }
-                final Pattern pathPattern = Pattern.compile(replacedPattern);
+                final Pattern pathPattern = Pattern.compile(replacedPattern + "$");
                 final Matcher patternMatcher = pathPattern.matcher(fullPath);
                 if (patternMatcher.find() && matcher.groupCount() == patternMatcher.groupCount()) {
                     request.setResource(method.getPatternPath());

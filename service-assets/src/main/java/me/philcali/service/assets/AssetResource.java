@@ -3,6 +3,7 @@ package me.philcali.service.assets;
 import java.io.IOException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.Base64;
 import java.util.Date;
 import java.util.Objects;
 import java.util.Optional;
@@ -12,7 +13,6 @@ import javax.inject.Inject;
 import javax.inject.Named;
 
 import me.philcali.service.annotations.GET;
-import me.philcali.service.annotations.NoExport;
 import me.philcali.service.annotations.request.HeaderParam;
 import me.philcali.service.annotations.request.PathParam;
 import me.philcali.service.binding.response.HttpException;
@@ -37,13 +37,11 @@ public class AssetResource {
         this.index = index;
     }
 
-    @NoExport
     @GET("/")
     public IResponse getIndex(@HeaderParam("If-Modified-Since") final String requestModified) {
         return getResource(requestModified, index);
     }
 
-    @NoExport
     @GET("/{proxy+}")
     public IResponse getResource(
             @HeaderParam("If-Modified-Since") final String requestModified,
@@ -62,13 +60,16 @@ public class AssetResource {
                     .map(date -> Response.notModified())
                     .orElseGet(() -> {
                         try {
-                            final String content = asset.getContentAsString();
+                            final byte[] content = asset.readContentFully();
+                            final String body = Base64.getUrlEncoder().encodeToString(content);
+                            // treat everything as raw, and encode accordingly
                             return Response.builder()
-                                .withBody(content)
+                                .withRaw(true)
+                                .withBody(body)
                                 .withHeaders("Content-Type", asset.getMimeType())
                                 .withHeaders("Cache-Control", "public, mag-age: " + maxAge)
                                 .withHeaders("Last-Modified", sdf.format(lastModified))
-                                .withHeaders("Content-Length", Integer.toString(content.length()))
+                                .withHeaders("Content-Length", Integer.toString(content.length))
                                 .build();
                         } catch (IOException ie) {
                             throw new HttpException(500, "Unable to load " + fullPath);

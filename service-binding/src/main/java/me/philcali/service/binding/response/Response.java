@@ -16,6 +16,7 @@ public class Response implements IResponse {
         private Map<String, String> headers;
         private String body;
         private Throwable exception;
+        private boolean raw = false;
 
         public Response build() {
             return new Response(this);
@@ -37,6 +38,10 @@ public class Response implements IResponse {
             return statusCode;
         }
 
+        public boolean isRaw() {
+            return raw;
+        }
+
         public Builder withBody(final String body) {
             this.body = body;
             return this;
@@ -49,6 +54,11 @@ public class Response implements IResponse {
 
         public Builder withHeaders(final Map<String, String> headers) {
             this.headers = headers;
+            return this;
+        }
+
+        public Builder withRaw(final boolean raw) {
+            this.raw = raw;
             return this;
         }
 
@@ -87,6 +97,7 @@ public class Response implements IResponse {
 
     public static Builder from(IResponse response) {
         return builder()
+                .withRaw(response.isRaw())
                 .withBody(response.getBody())
                 .withException(response.getException())
                 .withStatusCode(response.getStatusCode())
@@ -124,9 +135,11 @@ public class Response implements IResponse {
     private final int statusCode;
     private final Map<String, String> headers;
     private final String body;
+    private final boolean raw;
     private final Throwable exception;
 
     private Response(final Builder builder) {
+        this.raw = builder.raw;
         this.statusCode = builder.getStatusCode();
         this.headers = builder.getHeaders();
         this.body = builder.getBody();
@@ -151,6 +164,11 @@ public class Response implements IResponse {
     @Override
     public int getStatusCode() {
         return statusCode;
+    }
+
+    @Override
+    public boolean isRaw() {
+        return raw;
     }
 
     @Override

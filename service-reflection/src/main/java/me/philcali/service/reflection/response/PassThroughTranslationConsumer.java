@@ -13,6 +13,7 @@ public class PassThroughTranslationConsumer implements IResponseTranslationConsu
             IResponse response = (IResponse) result;
             builder.withStatusCode(response.getStatusCode())
                     .withException(response.getException())
+                    .withRaw(response.isRaw())
                     .withBody(response.getBody());
             // Allow interpolation of annotated headers
             response.getHeaders().forEach(builder::withHeaders);
