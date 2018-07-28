@@ -64,7 +64,13 @@ public class ServiceHandler extends SimpleChannelInboundHandler<Object> {
             request = (HttpRequest) req;
         } else if (req instanceof HttpContent) {
             final HttpContent content = (HttpContent) req;
-            buffer.append(new String(content.content().array(), StandardCharsets.UTF_8));
+            if (content.content().hasArray()) {
+                buffer.append(new String(content.content().array(), StandardCharsets.UTF_8));
+            } else {
+                final byte[] bytes = new byte[content.content().readableBytes()];
+                content.content().readBytes(bytes);
+                buffer.append(new String(bytes, StandardCharsets.UTF_8));
+            }
         }
         if (req instanceof LastHttpContent){
             final DefaultFullHttpResponse response = router
@@ -122,7 +128,7 @@ public class ServiceHandler extends SimpleChannelInboundHandler<Object> {
         request.setBody(buffer.toString());
         final Map<String, String> headers = new HashMap<>();
         req.headers().forEach(entry -> {
-            headers.put(entry.getKey(), entry.getValue());
+            headers.put(entry.getKey().toLowerCase(), entry.getValue());
         });
         request.setHeaders(headers);
         QueryStringDecoder queryDecoder = new QueryStringDecoder(req.uri());
@@ -179,12 +185,17 @@ public class ServiceHandler extends SimpleChannelInboundHandler<Object> {
     private Function<String, IAuthResult> invokeAuthorizer(final Method componentMethod, final Object component) {
         try {
             final Function<String, IAuthResult> thunk = (Function<String, IAuthResult>) componentMethod.invoke(component);
-            final TokenFilter filter = componentMethod.getAnnotation(TokenFilter.class);
+            final Class<?> componentInterface = component.getClass().getInterfaces()[0];
+            final TokenFilter filter = componentInterface.getMethod(
+                    componentMethod.getName(),
+                    componentMethod.getParameterTypes()).getAnnotation(TokenFilter.class);
             if (Objects.nonNull(filter)) {
                 return thunk.compose(filter.value().newInstance());
             }
             return thunk;
         } catch (IllegalAccessException
+                | NoSuchMethodException
+                | SecurityException
                 | InstantiationException
                 | IllegalArgumentException
                 | InvocationTargetException e) {

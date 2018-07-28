@@ -40,11 +40,11 @@ public class DefaultResponseTranslation implements IResponseTranslation {
 
     public static Builder standard(final IObjectMarshaller marshaller) {
         return builder()
+                .withConsumers(new BodyResponseTranslationConsumer(marshaller))
                 .withConsumers(new PassThroughTranslationConsumer())
                 .withConsumers(new HeaderTranslationConsumer())
                 .withConsumers(new NoContentResponseConsumer())
-                .withConsumers(new StatusCodeTranslationConsumer())
-                .withConsumers(new BodyResponseTranslationConsumer(marshaller));
+                .withConsumers(new StatusCodeTranslationConsumer());
     }
 
     private final List<IResponseTranslationConsumer> consumers;
