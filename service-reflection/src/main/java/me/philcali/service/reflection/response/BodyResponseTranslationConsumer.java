@@ -7,6 +7,7 @@ import java.util.Objects;
 import java.util.Optional;
 
 import me.philcali.service.annotations.request.Body;
+import me.philcali.service.annotations.response.Response;
 import me.philcali.service.binding.IOperation;
 import me.philcali.service.binding.response.IResponse;
 import me.philcali.service.binding.response.Response.Builder;
@@ -30,9 +31,7 @@ public class BodyResponseTranslationConsumer implements IResponseTranslationCons
             final Class<?> resultClass = result.getClass();
             try {
                 String body = null;
-                if (resultClass.getAnnotation(Body.class) != null || !IOperation.class.isAssignableFrom(method.getDeclaringClass())) {
-                    body = marshaller.marshall(result);
-                } else {
+                if (resultClass.getAnnotation(Response.class) != null || IOperation.class.isAssignableFrom(method.getDeclaringClass())) {
                     for (Field field : resultClass.getDeclaredFields()) {
                         if (field.getAnnotation(Body.class) != null) {
                             field.setAccessible(true);
@@ -40,6 +39,8 @@ public class BodyResponseTranslationConsumer implements IResponseTranslationCons
                             break;
                         }
                     }
+                } else {
+                    body = marshaller.marshall(result);
                 }
                 Optional.ofNullable(body)
                         .ifPresent(builder.withHeaders("Content-Type", "application/json")::withBody);

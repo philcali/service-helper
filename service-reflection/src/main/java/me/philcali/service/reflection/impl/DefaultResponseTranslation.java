@@ -42,7 +42,7 @@ public class DefaultResponseTranslation implements IResponseTranslation {
         return builder()
                 .withConsumers(new BodyResponseTranslationConsumer(marshaller))
                 .withConsumers(new PassThroughTranslationConsumer())
-                .withConsumers(new HeaderTranslationConsumer())
+                .withConsumers(new HeaderTranslationConsumer(marshaller))
                 .withConsumers(new NoContentResponseConsumer())
                 .withConsumers(new StatusCodeTranslationConsumer());
     }

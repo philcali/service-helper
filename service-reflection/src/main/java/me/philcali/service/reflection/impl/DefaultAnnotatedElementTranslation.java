@@ -26,6 +26,7 @@ import me.philcali.service.reflection.parameter.InputParameterTranslationLocator
 import me.philcali.service.reflection.parameter.ParamTranslationLocator;
 import me.philcali.service.reflection.parameter.RequestTranslationLocator;
 import me.philcali.service.reflection.parameter.VoidParameterTranslationLocator;
+import me.philcali.service.reflection.parameter.primitives.UnmarshalledTranslation;
 
 public class DefaultAnnotatedElementTranslation<T extends AnnotatedElement> extends AbstractTargetedTranslation<T, IRequest, IAnnotatedElementTranslationLocator<T>> {
     public static class Builder<T extends AnnotatedElement> {
@@ -47,7 +48,6 @@ public class DefaultAnnotatedElementTranslation<T extends AnnotatedElement> exte
     }
 
     private static final IParamDecoder DEFAULT_FORM_DECODER = new FormParamDecoder();
-    private static final IPrimitiveTranslation DEFAULT_PRIMITIVES = DefaultPrimitiveTranslation.standard().build();
 
     public static <T extends AnnotatedElement> Builder<T> builder() {
         return new Builder<>();
@@ -66,6 +66,10 @@ public class DefaultAnnotatedElementTranslation<T extends AnnotatedElement> exte
             final Function<T, Class<?>> lazyType,
             final Function<T, String> lazyName,
             final IObjectMarshaller marshaller) {
+        // Specialized parameter translation that parses things
+        final IPrimitiveTranslation primitives = DefaultPrimitiveTranslation.standard()
+                .withTranslations(new UnmarshalledTranslation(marshaller))
+                .build();
         return DefaultAnnotatedElementTranslation.<T>builder()
                 .withLocators(new VoidParameterTranslationLocator<T>(lazyType))
                 .withLocators(new RequestTranslationLocator<T>(lazyType))
@@ -74,30 +78,30 @@ public class DefaultAnnotatedElementTranslation<T extends AnnotatedElement> exte
                         QueryParam::value,
                         lazyName,
                         lazyType,
-                        DEFAULT_PRIMITIVES,
+                        primitives,
                         IRequest::getQueryStringParameters))
                 .withLocators(new ParamTranslationLocator<T, PathParam>(
                         PathParam.class,
                         PathParam::value,
                         lazyName,
                         lazyType,
-                        DEFAULT_PRIMITIVES,
+                        primitives,
                         IRequest::getPathParameters))
                 .withLocators(new ParamTranslationLocator<T, HeaderParam>(
                         HeaderParam.class,
                         HeaderParam::value,
                         lazyName,
                         lazyType,
-                        DEFAULT_PRIMITIVES,
+                        primitives,
                         IRequest::getHeaders))
                 .withLocators(new ParamTranslationLocator<T, FormParam>(
                         FormParam.class,
                         FormParam::value,
                         lazyName,
                         lazyType,
-                        DEFAULT_PRIMITIVES,
+                        primitives,
                         request -> DEFAULT_FORM_DECODER.decode(request.getBody())))
-                .withLocators(new CookieParamTranslationLocator<T>(lazyName, lazyType, DEFAULT_PRIMITIVES))
+                .withLocators(new CookieParamTranslationLocator<T>(lazyName, lazyType, primitives))
                 .withLocators(new AuthorizerParamTranslationLocator<T>())
                 .withLocators(new BodyTranslationLocator<T>(lazyType, marshaller));
     }

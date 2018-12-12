@@ -61,6 +61,7 @@ public class ServiceHandler extends SimpleChannelInboundHandler<Object> {
     @Override
     protected void channelRead0(final ChannelHandlerContext ctx, final Object req) throws Exception {
         if (req instanceof HttpRequest) {
+            buffer.setLength(0);
             request = (HttpRequest) req;
         } else if (req instanceof HttpContent) {
             final HttpContent content = (HttpContent) req;
